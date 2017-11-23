@@ -55,12 +55,33 @@ if __name__ == '__main__':
     disp = stereo.compute(imgL, imgR).astype(np.float32) / 16.0
 
     print('generating 3d point cloud...',)
-    h, w = imgL.shape[:2]
-    f = 5806.559                          
-    Q = np.float32([[1, 0, 0, -0.5*w],
-                    [0,-1, 0,  0.5*h], # turn points 180 deg around x-axis,
-                    [0, 0, 0,     -f], # so that y-axis looks up
-                    [0, 0, 1,      0]])
+
+    # cam0=[5806.559 0 1429.219; 0 5806.559 993.403; 0 0 1]
+    # cam1=[5806.559 0 1543.51; 0 5806.559 993.403; 0 0 1]
+    # doffs=114.291
+    # baseline=174.019
+    # width=2960
+    # height=2016
+    # ndisp=250
+    # isint=0
+    # vmin=38
+    # vmax=222
+    # dyavg=0
+    # dymax=0
+
+    w = 2960
+    h = 2016
+    f = 5806.559
+    baseline = 174.019
+    doffs=114.291
+    cx = 1429.219
+    cy = 993.403    
+    # z = baseline * f / (d + doffs)
+
+    Q = np.float32([[1, 0, 0, -cx],
+                    [0,-1, 0,  cy], # turn points 180 deg around x-axis,
+                    [0, 0, 0,  -f], # so that y-axis looks up
+                    [0, 0, 1,   baseline]])
     points = cv2.reprojectImageTo3D(disp, Q)
     colors = cv2.cvtColor(imgL, cv2.COLOR_BGR2RGB)
     mask = disp > disp.min()
