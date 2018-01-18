@@ -53,8 +53,10 @@ if __name__ == '__main__':
 
     print('computing disparity...')
     disp = stereo.compute(imgL, imgR).astype(np.float32) / 16.0
+    print(stereo)
+    print(disp)
 
-    print('generating 3d point cloud...',)
+    # print('generating 3d point cloud...',)
 
     # cam0=[5806.559 0 1429.219; 0 5806.559 993.403; 0 0 1]
     # cam1=[5806.559 0 1543.51; 0 5806.559 993.403; 0 0 1]
@@ -78,18 +80,18 @@ if __name__ == '__main__':
     cy = 993.403    
     # z = baseline * f / (d + doffs)
 
-    Q = np.float32([[1, 0, 0, -cx],
-                    [0,-1, 0,  cy], # turn points 180 deg around x-axis,
-                    [0, 0, 0,  -f], # so that y-axis looks up
-                    [0, 0, 1,   baseline]])
-    points = cv2.reprojectImageTo3D(disp, Q)
-    colors = cv2.cvtColor(imgL, cv2.COLOR_BGR2RGB)
-    mask = disp > disp.min()
-    out_points = points[mask]
-    out_colors = colors[mask]
-    out_fn = 'out.ply'
-    write_ply('out.ply', out_points, out_colors)
-    print('%s saved' % 'out.ply')
+    # Q = np.float32([[1, 0, 0, -cx],
+    #                 [0,-1, 0,  cy], # turn points 180 deg around x-axis,
+    #                 [0, 0, 0,  -f], # so that y-axis looks up
+    #                 [0, 0, 1,   baseline]])
+    # points = cv2.reprojectImageTo3D(disp, Q)
+    # colors = cv2.cvtColor(imgL, cv2.COLOR_BGR2RGB)
+    # mask = disp > disp.min()
+    # out_points = points[mask]
+    # out_colors = colors[mask]
+    # out_fn = 'out.ply'
+    # write_ply('out.ply', out_points, out_colors)
+    # print('%s saved' % 'out.ply')
 
     cv2.imshow('left', imgL)
     cv2.imshow('disparity', (disp-min_disp)/num_disp)
