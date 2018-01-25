@@ -2,9 +2,11 @@
 # https://stackoverflow.com/questions/38504760/fast-calculation-of-v-disparity-with-opencv-function-calchist
 # calcHist Example https://www.programcreek.com/python/example/70449/cv2.calcHist
 from __future__ import print_function
+from __future__ import division
+
+import numpy as np
 
 import cv2
-import numpy as np
 
 ply_header = '''ply
 format ascii 1.0
@@ -59,46 +61,30 @@ def calculate_udisparity(disp_img, max_disp, img_width):
 
 if __name__ == '__main__':
     print('loading images...')
-    imgL = cv2.pyrDown(cv2.imread('./im0.png'))  # downscale images for faster processing
-    imgR = cv2.pyrDown(cv2.imread('./im1.png'))
+    imgD = cv2.imread('./frame0002_disp.png')  
+    imgR = cv2.imread('./frame0002.png')
+    #  = cv2.cvtColor(imgD, cv2.COLOR_BGR2GRAY)
 
-    window_size = 3
-    min_disp = 38
-    num_disp = 240
-    stereo = cv2.StereoSGBM_create(minDisparity=min_disp,
-                                   numDisparities=num_disp,
-                                   blockSize=16,
-                                   P1=8 * 3 * window_size ** 2,
-                                   P2=32 * 3 * window_size ** 2,
-                                   disp12MaxDiff=1,
-                                   uniquenessRatio=10,
-                                   speckleWindowSize=100,
-                                   speckleRange=32
-                                   )
+    h, w, channel = imgD.shape
+    disparity_map = np.zeros((h, w), np.uint8)
+    for i in range(h):
+        for j in range(w):
+            disparity_map[i][j] = np.mean(imgD[i][j])
+    
 
-    print('computing disparity...')
-    disp = stereo.compute(imgL, imgR).astype(np.float32) / 16.0
-    disp_h, disp_w = disp.shape
+    max_disp = int(disparity_map.max())
+    for i in range(h):
+        for j in range(w):
+            disparity_map[i][j] = (max_disp - disparity_map[i][j]) / float(max_disp) * 255.0
+    
+    u_disparity = calculate_udisparity(disparity_map,255, w)
+    v_disparity = calculate_vdisparity(disparity_map,255, h)
 
-    w = IMAGE_WIDTH
-    h = IMAGE_HEIGHT
-    f = 5806.559
-    baseline = 174.019
-    doffs = 114.291
-    cx = 1429.219
-    cy = 993.403
-
-    uhist_vis = calculate_udisparity(disp_img=disp, max_disp=min_disp + num_disp, img_width=disp_w)
-    vhist_vis = calculate_vdisparity(disp_img=disp, max_disp=min_disp + num_disp, img_height=disp_h)
-
-    cv2.imshow('left', imgL)
-    cv2.imshow('disparity', (disp - min_disp) / num_disp)
-    cv2.imshow('vhist_vis', vhist_vis)
-    cv2.imshow('uhist_vis', uhist_vis)
+    disparity_map = cv2.applyColorMap(disparity_map, cv2.COLORMAP_JET)
+    # disparity_map_origin = cv2.applyColorMap(imgD, cv2.COLORMAP_JET)
+    cv2.imshow('disparity', disparity_map)
+    cv2.imshow('udisp', u_disparity)
+    cv2.imshow('vdisp', v_disparity)
+    cv2.imshow('original', imgR)
     cv2.waitKey()
     cv2.destroyAllWindows()
-
-
-    # cv2.imwrite('v-disparity.png', vhist_vis)
-    # cv2.imwrite('u-disparity.png', uhist_vis)
-

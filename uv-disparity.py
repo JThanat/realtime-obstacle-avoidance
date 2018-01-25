@@ -30,11 +30,12 @@ while True:
     vhist_vis = np.zeros((IMAGE_HEIGHT, max_disp), np.float)
     for i in range(IMAGE_HEIGHT):
         vhist_vis[i, ...] = cv2.calcHist(images=[image[i, ...]], channels=[0], mask=None, histSize=[max_disp],
-                                         ranges=[0, max_disp]).flatten() / float(IMAGE_HEIGHT)
+                                         ranges=[0, max_disp]).flatten() / float(IMAGE_WIDTH)
 
-
+    print(vhist_vis)
     vhist_vis = np.array(vhist_vis * 255, np.uint8)
     vblack_mask = vhist_vis < 5
+    print(vblack_mask)
     vhist_vis = cv2.applyColorMap(vhist_vis, cv2.COLORMAP_JET)
     vhist_vis[vblack_mask] = 0
 
@@ -42,7 +43,7 @@ while True:
     uhist_vis = np.zeros((max_disp, IMAGE_WIDTH), np.float)
     for i in range(IMAGE_WIDTH):
         uhist_vis[..., i] = cv2.calcHist(images=[image[..., i]], channels=[0], mask=None, histSize=[max_disp],
-                                         ranges=[0, max_disp]).flatten() / float(IMAGE_WIDTH)
+                                         ranges=[0, max_disp]).flatten() / float(IMAGE_HEIGHT)
 
     uhist_vis = np.array(uhist_vis * 255, np.uint8)
     ublack_mask = uhist_vis < 5
