@@ -179,4 +179,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
+# Dataset
+/dataset/
+
 # End of https://www.gitignore.io/api/python,opencv,pycharm
