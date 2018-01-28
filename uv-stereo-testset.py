@@ -5,7 +5,7 @@ from __future__ import print_function
 from __future__ import division
 
 import numpy as np
-
+import os
 import cv2
 
 ply_header = '''ply
@@ -22,6 +22,7 @@ end_header
 
 IMAGE_HEIGHT = 2016
 IMAGE_WIDTH = 2960
+BASE_DIR = './'
 
 
 def write_ply(fn, verts, colors):
@@ -61,8 +62,12 @@ def calculate_udisparity(disp_img, max_disp, img_width):
 
 if __name__ == '__main__':
     print('loading images...')
-    imgD = cv2.imread('./frame0002_disp.png')  
-    imgR = cv2.imread('./frame0002.png')
+    img_path = os.path.join(BASE_DIR, 'dataset/DATASET-CVC-02/CVC-02-CG/data')
+    color_img_path = os.path.join(img_path, 'color')
+    depth_img_path = os.path.join(img_path, 'depth')
+    img_name = 'frame0003.png'
+    imgR = cv2.imread(os.path.join(color_img_path, img_name))
+    imgD = cv2.imread(os.path.join(depth_img_path, img_name))  
     #  = cv2.cvtColor(imgD, cv2.COLOR_BGR2GRAY)
 
     h, w, channel = imgD.shape
@@ -73,18 +78,24 @@ if __name__ == '__main__':
     
 
     max_disp = int(disparity_map.max())
+    min_disp = int(disparity_map.min())
+    num_disp = max_disp-min_disp
     for i in range(h):
         for j in range(w):
-            disparity_map[i][j] = (max_disp - disparity_map[i][j]) / float(max_disp) * 255.0
-    
-    u_disparity = calculate_udisparity(disparity_map,255, w)
-    v_disparity = calculate_vdisparity(disparity_map,255, h)
+            # Invert the testset grayscale value and scale to 255 (Make the nearer point color brighter)
+            disparity_map[i][j] = (max_disp - disparity_map[i][j]) / num_disp * 255.0
+    print('calculate uv-disparity...')
+    u_disparity = calculate_udisparity(disp_img=disparity_map, max_disp=255, img_width=w)
+    v_disparity = calculate_vdisparity(disp_img=disparity_map, max_disp=255, img_height=h)
 
     disparity_map = cv2.applyColorMap(disparity_map, cv2.COLORMAP_JET)
-    # disparity_map_origin = cv2.applyColorMap(imgD, cv2.COLORMAP_JET)
+    disparity_map_origin = cv2.applyColorMap(imgD, cv2.COLORMAP_JET)
+
+    print('displaying images...')
     cv2.imshow('disparity', disparity_map)
     cv2.imshow('udisp', u_disparity)
     cv2.imshow('vdisp', v_disparity)
     cv2.imshow('original', imgR)
-    cv2.waitKey()
+    cv2.imshow('original_disp', disparity_map_origin)
+    cv2.waitKey(0)
     cv2.destroyAllWindows()
