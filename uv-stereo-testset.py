@@ -51,19 +51,24 @@ def calculate_vdisparity(disp_img, max_disparity, img_height, img_width):
 
     vhist_vis = np.array(vhist_vis * 255, np.uint8)
     # mask_threshold = max_disparity/10
-    mask_threshold = 5
+    mask_threshold = 10
+
     vblack_mask = vhist_vis < mask_threshold
-    vwhite_mask = vhist_vis > mask_threshold
-    # vhist_vis = cv2.applyColorMap(vhist_vis, cv2.COLORMAP_JET)
+    vwhite_mask = vhist_vis >= mask_threshold
+
+    vhist_vis[vblack_mask] = 0
     vhist_vis[vwhite_mask] = 255
 
     # Add houghman line extract
-    # lines = cv2.HoughLinesP(vhist_vis, 1, math.pi/180.0, 10, np.array([]), 50, 10)
-    # a,b,c = lines.shape
-    # for i in range(a):
-    #     cv2.line(vhist_vis, (lines[i][0][0], lines[i][0][1]), (lines[i][0][2], lines[i][0][3]), (0, 0, 255), 3, cv2.LINE_AA)
+    lines = cv2.HoughLinesP(vhist_vis, 1, math.pi/180.0, 5, np.array([]), 10, 10)
+    a,b,c = lines.shape
+    tmp = np.zeros((img_height, max_disparity), np.float)
+    for i in range(a):
+        cv2.line(tmp, (lines[i][0][0], lines[i][0][1]), (lines[i][0][2], lines[i][0][3]), (255, 0, 0), 1, cv2.LINE_AA)
 
-    return vhist_vis
+    vhist_vis = cv2.applyColorMap(vhist_vis, cv2.COLORMAP_JET)
+    # return vhist_vis
+    return tmp
 
 def calculate_udisparity(disp_img, max_disparity, img_height, img_width):
     # calculate u-disparity
@@ -73,18 +78,32 @@ def calculate_udisparity(disp_img, max_disparity, img_height, img_width):
                                          ranges=[0, max_disparity]).flatten() / float(img_height)
 
     uhist_vis = np.array(uhist_vis * 255, np.uint8)
-    ublack_mask = uhist_vis < 5
-    uhist_vis = cv2.applyColorMap(uhist_vis, cv2.COLORMAP_JET)
-    uhist_vis[ublack_mask] = 0
-    return uhist_vis
+    mask_threshold = 10
+    ublack_mask = uhist_vis < mask_threshold
+    uwhite_mask = uhist_vis >= mask_threshold
 
-def scale_disparity(disparity_map, h, w, num_disp, scaling_factor):
+    uhist_vis[ublack_mask] = 0
+    uhist_vis[uwhite_mask] = 255
+
+    # Add houghman line extract
+    lines = cv2.HoughLinesP(uhist_vis, 1, math.pi/180.0, 5, np.array([]), 10,15)
+    a,b,c = lines.shape
+    tmp = np.zeros((max_disparity, img_width), np.float)
+    for i in range(a):
+        cv2.line(tmp, (lines[i][0][0], lines[i][0][1]), (lines[i][0][2], lines[i][0][3]), (255, 0, 0), 1, cv2.LINE_AA)
+
+    uhist_vis = cv2.applyColorMap(uhist_vis, cv2.COLORMAP_JET)
+    # return uhist_vis
+    return tmp
+
+def scale_disparity(disparity_map, h, w, max_disp, num_disp, scaling_factor):
     m = copy(disparity_map)
     for i in range(h):
         for j in range(w):
             # Invert the testset grayscale value and scale to 255 (Make the nearer point color brighter)
-            # m[i][j] = (max_disp - m[i][j]) / num_disp * 255.0
-            m[i][j] = m[i][j] / num_disp * scaling_factor
+            # m[i][j] = (max_disp - m[i][j]) / num_disp * scaling_factor
+            if m[i][j] != 0:
+                m[i][j] = (max_disp - m[i][j]) / num_disp * scaling_factor
     return m
 
 if __name__ == '__main__':
@@ -92,7 +111,7 @@ if __name__ == '__main__':
     img_path = os.path.join(BASE_DIR, 'dataset/DATASET-CVC-02/CVC-02-CG/data')
     color_img_path = os.path.join(img_path, 'color')
     depth_img_path = os.path.join(img_path, 'depth')
-    img_name = 'frame0003.png'
+    img_name = 'frame0006.png'
     imgR = cv2.imread(os.path.join(color_img_path, img_name))
     imgD = cv2.imread(os.path.join(depth_img_path, img_name))  
     #  = cv2.cvtColor(imgD, cv2.COLOR_BGR2GRAY)
@@ -109,7 +128,7 @@ if __name__ == '__main__':
     num_disp = max_disp-min_disp
 
     scaling_factor = 255
-    # disparity_map = scale_disparity(disparity_map, h, w, num_disp, scaling_factor)
+    disparity_map = scale_disparity(disparity_map, h, w, max_disp, num_disp, scaling_factor)
 
     print('calculate uv-disparity...')
     u_disparity = calculate_udisparity(disp_img=disparity_map, max_disparity=scaling_factor, img_height=h, img_width=w)
