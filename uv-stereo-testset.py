@@ -63,12 +63,23 @@ def calculate_vdisparity(disp_img, max_disparity, img_height, img_width):
     lines = cv2.HoughLinesP(vhist_vis, 1, math.pi/180.0, 5, np.array([]), 10, 10)
     a,b,c = lines.shape
     tmp = np.zeros((img_height, max_disparity), np.float)
+    obstacle = np.zeros((img_height, img_width), np.float)
     for i in range(a):
+        # line on x1 y1 and x2 y2
+        # x is disparity and y is row
+        # print("{} {} {} {}".format(lines[i][0][0], lines[i][0][1], lines[i][0][2], lines[i][0][3]))
         cv2.line(tmp, (lines[i][0][0], lines[i][0][1]), (lines[i][0][2], lines[i][0][3]), (255, 0, 0), 1, cv2.LINE_AA)
+        expect_disp = lines[i][0][0]
+        for j in range(lines[i][0][1], lines[i][0][3]+1):
+            for k in range(img_width):
+                if disp_img[j][k] == expect_disp:
+                    obstacle[j][k] = 255
+
+
 
     vhist_vis = cv2.applyColorMap(vhist_vis, cv2.COLORMAP_JET)
     # return vhist_vis
-    return tmp
+    return vhist_vis
 
 def calculate_udisparity(disp_img, max_disparity, img_height, img_width):
     # calculate u-disparity
@@ -111,7 +122,7 @@ if __name__ == '__main__':
     img_path = os.path.join(BASE_DIR, 'dataset/DATASET-CVC-02/CVC-02-CG/data')
     color_img_path = os.path.join(img_path, 'color')
     depth_img_path = os.path.join(img_path, 'depth')
-    img_name = 'frame0006.png'
+    img_name = 'frame0005.png'
     imgR = cv2.imread(os.path.join(color_img_path, img_name))
     imgD = cv2.imread(os.path.join(depth_img_path, img_name))  
     #  = cv2.cvtColor(imgD, cv2.COLOR_BGR2GRAY)
@@ -127,7 +138,7 @@ if __name__ == '__main__':
     min_disp = int(disparity_map.min())
     num_disp = max_disp-min_disp
 
-    scaling_factor = 255
+    scaling_factor = max_disp
     disparity_map = scale_disparity(disparity_map, h, w, max_disp, num_disp, scaling_factor)
 
     print('calculate uv-disparity...')
