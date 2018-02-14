@@ -28,6 +28,11 @@ IMAGE_WIDTH = 2960
 BASE_DIR = './'
 
 
+def draw_object(image, x, y, width=50, height=100):
+    color = image[y, x]
+    image[y-height:y, x-width//2:x+width//2] = color
+
+
 def write_ply(fn, verts, colors):
     verts = verts.reshape(-1, 3)
     colors = colors.reshape(-1, 3)
@@ -48,11 +53,9 @@ def calculate_vdisparity(disp_img, max_disparity, img_height, img_width, obstacl
         vhist_vis[i, ...] = cv2.calcHist(images=[disp_img[i, ...]], channels=[0], mask=None, histSize=[max_disparity],
                                          ranges=[0, max_disparity]).flatten() / float(img_width)
 
-
     vhist_vis = np.array(vhist_vis * 255, np.uint8)
     # mask_threshold = max_disparity/10
     mask_threshold = 20
-
     vblack_mask = vhist_vis < mask_threshold
     vwhite_mask = vhist_vis >= mask_threshold
 
@@ -72,14 +75,16 @@ def calculate_vdisparity(disp_img, max_disparity, img_height, img_width, obstacl
         if obstacle is None:
             continue
 
-        if lines[i][0][0] != 0:
+        if lines[i][0][0] == lines[i][0][2] and lines[i][0][0] != 0:
             expect_disp = lines[i][0][0]
+            # print(expect_disp)
             # for j in range row y1 to row y2
-            if expect_disp != 0:
-                for j in range(lines[i][0][1], lines[i][0][3]+1):
-                    for k in range(img_width):
-                        if disp_img[j][k] == expect_disp:
-                            obstacle[j][k] = 125
+            r1 = lines[i][0][1] if lines[i][0][1] < lines[i][0][3] else lines[i][0][3]
+            r2 = lines[i][0][3] if lines[i][0][3] > lines[i][0][1] else lines[i][0][1]
+            for j in range(r1, r2):
+                for k in range(img_width):
+                    if disp_img[j][k] == expect_disp:
+                        obstacle[j][k] = 125
 
 
 
@@ -144,7 +149,6 @@ if __name__ == '__main__':
     imgR = cv2.imread(os.path.join(color_img_path, img_name))
     imgD = cv2.imread(os.path.join(depth_img_path, img_name))  
     #  = cv2.cvtColor(imgD, cv2.COLOR_BGR2GRAY)
-
     h, w, channel = imgD.shape
     print('h:{} w:{} channel:{}'.format(h,w,channel))
     disparity_map = np.zeros((h, w), np.uint8)
@@ -163,6 +167,18 @@ if __name__ == '__main__':
     obs = np.zeros((h, w), np.uint8)
 
     disparity_map = scale_disparity(disparity_map, h, w, max_disp, num_disp, scaling_factor)
+
+
+    # create fake disparity
+    # scaling_factor = 200
+    # disparity_map = np.zeros((600, 800), np.uint8)
+
+    # for c in range(h)[::-1]:
+    #     disparity_map[c, ...] = int(float(c) / h * scaling_factor)
+
+    # draw_object(disparity_map, 275, 175)
+    # draw_object(disparity_map, 300, 200)
+    # draw_object(disparity_map, 100, 350)
 
     print('calculate uv-disparity...')
     u_disparity = calculate_udisparity(disp_img=disparity_map, max_disparity=scaling_factor, img_height=h, img_width=w, obstacle=obs_u)
