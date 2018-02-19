@@ -12,8 +12,9 @@ objp[:,:2] = np.mgrid[0:7,0:6].T.reshape(-1,2)
 # Arrays to store object points and image points from all the images.
 objpoints = [] # 3d point in real world space
 imgpoints = [] # 2d points in image plane.
+undistorts = [] # undistort map
 
-images = glob.glob('*.jpg')
+images = glob.glob('./calib_img/*.jpg')
 
 for fname in images:
     img = cv2.imread(fname)
@@ -29,9 +30,37 @@ for fname in images:
         cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
         imgpoints.append(corners)
 
+        ret_cal, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
+        print(mtx)
+        print(ret_cal)
+
+        h,  w = img.shape[:2]
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
+
+        undist = cv2.undistort(img, mtx, dist, None, newcameramtx)
+
+        x,y,w,h = roi
+        undist = undist[y:y+h, x:x+w]
+        # cv2.imwrite('calibresult.png',undist)
+
         # Draw and display the corners
-        cv2.drawChessboardCorners(img, (7,6), corners2,ret)
+        cv2.drawChessboardCorners(img, (7,6), corners,ret)
         cv2.imshow('img',img)
-        cv2.waitKey(500)
+        cv2.imshow('undist', undist)
+        cv2.waitKey()
 
 cv2.destroyAllWindows()
+
+# ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
+
+# img = cv2.imread('left12.jpg')
+# h,  w = img.shape[:2]
+# newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
+
+# # undistort
+# dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
+
+# # crop the image
+# x,y,w,h = roi
+# dst = dst[y:y+h, x:x+w]
+# cv2.imwrite('calibresult.png',dst)

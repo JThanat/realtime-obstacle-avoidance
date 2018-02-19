@@ -55,7 +55,7 @@ def calculate_vdisparity(disp_img, max_disparity, img_height, img_width, obstacl
 
     vhist_vis = np.array(vhist_vis * 255, np.uint8)
     # mask_threshold = max_disparity/10
-    mask_threshold = 20
+    mask_threshold = 15
     vblack_mask = vhist_vis < mask_threshold
     vwhite_mask = vhist_vis >= mask_threshold
 
@@ -155,7 +155,8 @@ if __name__ == '__main__':
     for i in range(h):
         for j in range(w):
             disparity_map[i][j] = np.mean(imgD[i][j])
-    
+    # h = 600
+    # w = 800
 
     max_disp = int(disparity_map.max())
     min_disp = int(disparity_map.min())
