@@ -1,0 +1,8 @@
+mode: 0
+resolution: 2
+number: 0
+exposure: 50
+gain: 1
+grr: 0
+multi: 1
+32bit: 0
