@@ -19,6 +19,8 @@ images = glob.glob('./calib_img/*.jpg')
 for fname in images:
     img = cv2.imread(fname)
     gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    h, w = gray.shape
+    # gray = cv2.resize(gray, (0,0), fx=0.5, fy=0.5 )
 
     # Find the chess board corners
     ret, corners = cv2.findChessboardCorners(gray, (7,6),None)
@@ -30,37 +32,46 @@ for fname in images:
         cv2.cornerSubPix(gray,corners,(11,11),(-1,-1),criteria)
         imgpoints.append(corners)
 
-        ret_cal, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
-        print(mtx)
-        print(ret_cal)
+        # undist = cv2.undistort(img, mtx, dist, None, newcameramtx)
 
-        h,  w = img.shape[:2]
-        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
-
-        undist = cv2.undistort(img, mtx, dist, None, newcameramtx)
-
-        x,y,w,h = roi
-        undist = undist[y:y+h, x:x+w]
+        # x,y,w,h = roi
+        # undist = undist[y:y+h, x:x+w]
         # cv2.imwrite('calibresult.png',undist)
 
         # Draw and display the corners
-        cv2.drawChessboardCorners(img, (7,6), corners,ret)
-        cv2.imshow('img',img)
-        cv2.imshow('undist', undist)
-        cv2.waitKey()
+        # cv2.drawChessboardCorners(img, (7,6), corners,ret)
+        # cv2.imshow('img',img)
+        # cv2.imshow('undist', undist)
+        # cv2.waitKey()
+
+ret_cal, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
+
+h,  w = img.shape[:2]
+newcameramtx, roi = cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
+print(mtx)
+print(dist)
+print(newcameramtx)
+
+mean_error = 0
+for i in range(len(objpoints)):
+    imgpoints2, _ = cv2.projectPoints(objpoints[i], rvecs[i], tvecs[i], mtx, dist)
+    error = cv2.norm(imgpoints[i], imgpoints2, cv2.NORM_L2)/len(imgpoints2)
+    mean_error += error
+print( "total error: {}".format(mean_error/len(objpoints)) )
+
+# Sample Undistort Image
+sample_img = cv2.imread('./calib_img/debayer-left26.jpg')
+undist = cv2.undistort(sample_img, mtx, dist, None, newcameramtx)
+
+x,y,w,h = roi
+undist_crop = undist[y:y+h, x:x+w]
+# cv2.imwrite('calibresult.png',undist)
+
+# Draw and display the corners
+cv2.drawChessboardCorners(img, (7,6), corners,ret)
+cv2.imshow('img',sample_img)
+cv2.imshow('undist', undist)
+cv2.imshow('undist_crop', undist_crop)
+cv2.waitKey()
 
 cv2.destroyAllWindows()
-
-# ret, mtx, dist, rvecs, tvecs = cv2.calibrateCamera(objpoints, imgpoints, gray.shape[::-1],None,None)
-
-# img = cv2.imread('left12.jpg')
-# h,  w = img.shape[:2]
-# newcameramtx, roi=cv2.getOptimalNewCameraMatrix(mtx,dist,(w,h),1,(w,h))
-
-# # undistort
-# dst = cv2.undistort(img, mtx, dist, None, newcameramtx)
-
-# # crop the image
-# x,y,w,h = roi
-# dst = dst[y:y+h, x:x+w]
-# cv2.imwrite('calibresult.png',dst)
