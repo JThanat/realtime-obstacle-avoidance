@@ -93,8 +93,8 @@ int main(void)
     FileStorage fs("./extrinsics.yml", FileStorage::READ);
 
     // img path
-    img_left_path = "../calib_img/debayer-left4.jpg";
-    img_right_path = "../calib_img/debayer-right4.jpg";
+    img_left_path = "../calib_img/debayer-img.jpg";
+    img_right_path = "../calib_img/debayer-img2.jpg";
 
     left_img = imread(img_left_path, CV_LOAD_IMAGE_GRAYSCALE);
     right_img = imread(img_right_path, CV_LOAD_IMAGE_GRAYSCALE);
@@ -191,10 +191,20 @@ int main(void)
     else
         disp.convertTo(disp8, CV_8U);
 
-    // imshow("left", cropped_left);
-    // imshow("right", cropped_right);
-
     uhist_vis = calculate_udisparity(disp8, numberOfDisparities + 0, image_size);
+    
+    // drawing canvas
+    Mat canvas;
+    w = cropped_left.size().width;
+    h = cropped_left.size().height;
+    canvas.create(h, w*2, CV_8UC1);
+    cropped_left.copyTo(canvas.rowRange(0,h).colRange(0,w));
+    cropped_right.copyTo(canvas.rowRange(0,h).colRange(w,w*2));
+    cvtColor(canvas, canvas, CV_GRAY2BGR);
+    for( j = 0; j < canvas.rows; j += 16 )
+        line(canvas, Point(0, j), Point(canvas.cols, j), Scalar(0, 255, 0), 1, 8);
+
+    imshow("canvas", canvas);
     imshow("disp", disp8);
     imshow("uhist", uhist_vis);
     waitKey(0);
