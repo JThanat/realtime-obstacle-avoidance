@@ -1,5 +1,5 @@
 mode: 0
-resolution: 2
+resolution: 1
 number: 0
 exposure: 50
 gain: 1

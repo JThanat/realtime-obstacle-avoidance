@@ -1,0 +1,9 @@
+{
+  "files.associations": {
+    "camera.h": "c",
+    "videodev2.h": "c",
+    "ratio": "c",
+    "system_error": "c",
+    "type_traits": "c"
+  }
+}
