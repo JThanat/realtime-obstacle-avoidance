@@ -23,19 +23,23 @@
 using namespace cv;
 using namespace std;
 
-Mat calculate_udisparity(Mat disp_img, int max_disp, Size image_size) 
+Mat calculate_udisparity(Mat disp_img, int max_disp, Size image_size)
 {
+    int64 t;
+    uint8_t *p;
     Mat uhist_vis = Mat::zeros(max_disp, image_size.width, CV_8UC1);
-    Mat ublack_mask = Mat::zeros(max_disp, image_size.width, CV_8UC1);
+    Mat uline_mask = Mat::zeros(max_disp, image_size.width, CV_8UC3);
     Mat hist, tmp_col;
-    int i,j,k;
+    int i, j, k, start, end;
+    int threshold = max_disp * 0.1;
+    int accumulate_threshold;
     int channels[] = {0};
     int hist_size[] = {max_disp};
-    float tmp_range[] = {0.0, (float) max_disp};
-    const float* ranges[] = {tmp_range};
-    
+    float tmp_range[] = {0.0, (float)max_disp};
+    const float *ranges[] = {tmp_range};
 
-    for (i=0; i < image_size.width ; i++)
+    t = getTickCount();
+    for (i = 0; i < image_size.width; i++)
     {
         /*
         void calcHist( const Mat* images, int nimages,
@@ -44,10 +48,54 @@ Mat calculate_udisparity(Mat disp_img, int max_disp, Size image_size)
                           const float** ranges, bool uniform = true, bool accumulate = false );
         */
         tmp_col = disp_img.col(i);
-        calcHist( &tmp_col, 1, channels, Mat(), hist, 1, hist_size, ranges, true, false);
+        calcHist(&tmp_col, 1, channels, Mat(), hist, 1, hist_size, ranges, true, false);
         hist.col(0).copyTo(uhist_vis.col(i));
     }
-    uhist_vis = uhist_vis > max_disp * 0.1;
+    t = getTickCount() - t;
+    cout << "Calc UMap Time elapsed: " << t * 1000 / getTickFrequency() << "ms" << endl;
+    cout << uhist_vis.depth() << endl;
+    t = getTickCount();
+
+    /*
+    Note: for Matrix and Point Coordinate System
+    0/0---column--->      0/0---X--->
+    |                     |
+    row     Mat           Y   Point
+    |                     |
+    v                     v
+    */
+    for (i = 1; i < uhist_vis.rows; ++i) // we skip disparity 0 which is corrupted part
+    {
+        p = uhist_vis.ptr<uint8_t>(i);
+        accumulate_threshold = 0;
+        start = end = -1;
+        for (j = 0; j < uhist_vis.cols; ++j)
+        {
+            if (p[j] >= threshold)
+            {
+                accumulate_threshold += p[j];
+                if (start == -1) start = j;
+
+            }
+            else if (accumulate_threshold > 2 * max_disp)
+            {
+                end = j;
+                line(uline_mask, Point(start, i), Point(end, i), Scalar(0, 255, 0), 1, 8);
+                start = end = -1;
+                accumulate_threshold = 0;
+            }
+            else 
+            {
+                start = end = -1;
+                accumulate_threshold = 0;
+            }
+            // if(p[j] == 255) cout << unsigned(p[j]) << " ";
+        }
+    }
+    t = getTickCount() - t;
+    cout << "Finding Line Time elapsed: " << t * 1000 / getTickFrequency() << "ms" << endl;
+    imshow("uhist", uhist_vis);
+    imshow("uline", uline_mask);
     return uhist_vis;
 }
 
@@ -136,8 +184,6 @@ int main(void)
     w = cvRound(image_size.width * sf);
     h = cvRound(image_size.height * sf);
 
-    cout << w << " " << h << endl;
-
     // undistort and rectify
     t = getTickCount();
     initUndistortRectifyMap(camera_matrix[0], dist_coeffs[0], R1, P1, image_size, CV_16SC2, rmap[0][0], rmap[0][1]);
@@ -149,9 +195,9 @@ int main(void)
     // use second region of interest because it is smaller for this specific camera calibration
     Rect vroi(cvRound(VROIX * sf), cvRound(VROIY * sf),
               cvRound(VROIW * sf), cvRound(VROIH * sf));
-    
-    resize(rimg[0], rimg[0], Size(w,h), 0,0, INTER_AREA);
-    resize(rimg[1], rimg[1], Size(w,h), 0,0, INTER_AREA);
+
+    resize(rimg[0], rimg[0], Size(w, h), 0, 0, INTER_AREA);
+    resize(rimg[1], rimg[1], Size(w, h), 0, 0, INTER_AREA);
     cropped_left = rimg[0](vroi);
     cropped_right = rimg[1](vroi);
 
@@ -169,7 +215,6 @@ int main(void)
 
     image_size = cropped_left.size();
     numberOfDisparities = numberOfDisparities > 0 ? numberOfDisparities : ((image_size.width / 8) + 15) & -16;
-    printf("num of disp %d\n", numberOfDisparities);
     sgbm->setP1(8 * cn * sgbmWinSize * sgbmWinSize);
     sgbm->setP2(32 * cn * sgbmWinSize * sgbmWinSize);
     sgbm->setMinDisparity(0);
@@ -191,17 +236,20 @@ int main(void)
     else
         disp.convertTo(disp8, CV_8U);
 
-    uhist_vis = calculate_udisparity(disp8, numberOfDisparities + 0, image_size);
-    
+    double min, max;
+    minMaxLoc(disp8, &min, &max, NULL, NULL);
+    cout << min << " " << max << " " << numberOfDisparities << endl;
+    uhist_vis = calculate_udisparity(disp8, max, image_size);
+
     // drawing canvas
     Mat canvas;
     w = cropped_left.size().width;
     h = cropped_left.size().height;
-    canvas.create(h, w*2, CV_8UC1);
-    cropped_left.copyTo(canvas.rowRange(0,h).colRange(0,w));
-    cropped_right.copyTo(canvas.rowRange(0,h).colRange(w,w*2));
+    canvas.create(h, w * 2, CV_8UC1);
+    cropped_left.copyTo(canvas.rowRange(0, h).colRange(0, w));
+    cropped_right.copyTo(canvas.rowRange(0, h).colRange(w, w * 2));
     cvtColor(canvas, canvas, CV_GRAY2BGR);
-    for( j = 0; j < canvas.rows; j += 16 )
+    for (j = 0; j < canvas.rows; j += 16)
         line(canvas, Point(0, j), Point(canvas.cols, j), Scalar(0, 255, 0), 1, 8);
 
     imshow("canvas", canvas);
@@ -210,7 +258,6 @@ int main(void)
     waitKey(0);
 
     // uv map
-
 
     // connect u map
 
