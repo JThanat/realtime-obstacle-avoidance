@@ -179,7 +179,7 @@ namespace umap_utility
                         ellipse_desc_objects[object_count - 1].u2 = maxc;
                         ellipse_desc_objects[object_count - 1].d1 = maxd;
                         ellipse_desc_objects[object_count - 1].d2 = sumd/component_count;
-                        // cout << "ellipse_desc:" << object_count - 1 << " " << ellipse_desc_objects[object_count - 1].u1 << " " << ellipse_desc_objects[object_count - 1].u2 << " " << ellipse_desc_objects[object_count - 1].d1 << " " << ellipse_desc_objects[object_count - 1].d2 << " " << (mind+maxd)/2 << endl;
+                        cout << "ellipse_desc:" << object_count - 1 << " " << ellipse_desc_objects[object_count - 1].u1 << " " << ellipse_desc_objects[object_count - 1].u2 << " " << ellipse_desc_objects[object_count - 1].d1 << " " << ellipse_desc_objects[object_count - 1].d2 << " " << (mind+maxd)/2 << endl;
                     }
                     // line(group_rect, Point(minc, sumd/component_count), Point(maxc,sumd/component_count), Scalar(0,255,0));
                     rectangle(group_rect, Point(minc, maxd), Point(maxc, mind), Scalar(255,0,0));

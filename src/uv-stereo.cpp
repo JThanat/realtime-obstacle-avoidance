@@ -76,6 +76,7 @@ int main(void)
     vector<Point3f> objectPoints;
 
     vector<ellipse_desc> ellipse_list;
+    vector< pair<double, double> > waypoints(20);
 
     Mat uhist_vis;
 
@@ -187,10 +188,6 @@ int main(void)
     // u-map and line connection
     ellipse_list = calculate_udisparity(disp8, max, image_size, obj_count);
 
-    // draw elipse
-
-    // project back
-
     // drawing canvas
     // Mat canvas;
     // w = cropped_left.size().width;
@@ -207,25 +204,25 @@ int main(void)
     // // imshow("uhist", uhist_vis);
     // waitKey(0);
 
+    /*
+    Drawing Ellipse Section
+    */
+
     f = 30.23622; // in pixel 1 millimeter = 3.779528 pixel
     b = 15;   // in cm
       
     // TODO: update current position
     current_x = 3000; // need update
     current_y = 0; // need update
-    Mat obstacle_map(1000, 5000, CV_8UC3);
+    Mat obstacle_map(2000, 6000, CV_8UC3);
 
     GYb = 0; // 0 degree for now
     Mat GRb = (Mat_<double>(2, 2) << cos(GYb * M_PI / 180), -sin(GYb * M_PI / 180), sin(GYb * M_PI / 180), cos(GYb * M_PI / 180));
     Mat GPb = (Mat_<double>(2, 1) << current_x, current_y);
-    /*
-    End of ellipse obstacle map declaration
-    */
-    
+
     for (i = 0; i < obj_count; ++i)
     {
         cout << "ellipse "<< i << endl; 
-        cout << "before scaling: " << ellipse_list[i].u1 << " " << ellipse_list[i].u2 << " " << ellipse_list[i].d1 << " " << ellipse_list[i].d2 << endl;
         ellipse_list[i].u1 = ellipse_list[i].u1 - image_size.width/2; // set position of the drone at the center of the image
         ellipse_list[i].u2 = ellipse_list[i].u2 - image_size.width/2;
         ellipse_list[i].d1 = ellipse_list[i].d1/16;
@@ -240,16 +237,26 @@ int main(void)
         ellipse_list[i].GPe = GRb * ellipse_list[i].BPe + GPb;
         ellipse_list[i].GSe = GRb * ellipse_list[i].BSe + GPb;
 
-        pe1 = ellipse_list[i].GPe.ptr<double>(0);
-        pe2 = ellipse_list[i].GPe.ptr<double>(1);
+        // drawing ellipse
+        // pe1 = ellipse_list[i].GPe.ptr<double>(0);
+        // pe2 = ellipse_list[i].GPe.ptr<double>(1);
 
-        se1 = ellipse_list[i].BSe.ptr<double>(0);
-        se2 = ellipse_list[i].BSe.ptr<double>(1);
-        ellipse(obstacle_map, Point(cvRound(pe1[0]),cvRound(2000 - pe2[0])), Size(cvRound(2*se1[0]),cvRound(2*se2[0])), 0, 0, 360, Scalar(0,255,0),2);
-        cout << "drawn: " << pe1[0] << " " << pe2[0] << " " << 2*se1[0] << " " << 2*se2[0] << endl;
+        // se1 = ellipse_list[i].BSe.ptr<double>(0);
+        // se2 = ellipse_list[i].BSe.ptr<double>(1);
+        // ellipse(obstacle_map, Point(cvRound(pe1[0]),cvRound(2000 - pe2[0])), Size(cvRound(2*se1[0]),cvRound(2*se2[0])), 0, 0, 360, Scalar(0,255,0),2);
+        // cout << "drawn: " << pe1[0] << " " << pe2[0] << " " << 2*se1[0] << " " << 2*se2[0] << endl;
     }
-    line(obstacle_map, Point(3000,0), Point(3000,2000), Scalar(0,0,255));
-    imwrite("./obstacle_map.jpg", obstacle_map);
+    // line(obstacle_map, Point(3000,0), Point(3000,2000), Scalar(0,0,255));
+    // imwrite("./obstacle_map.jpg", obstacle_map);
+
+    /*
+    Generate Waypoint 
+    */
+   for (i = 0 ; i <= 10 ; i++)
+   {
+       waypoints[i] = make_pair(0,i);
+   }
+
 
     return 0;
 }
