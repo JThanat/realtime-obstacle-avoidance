@@ -11,7 +11,8 @@
             },
             "includePath": [
                 "/usr/include",
-                "/Users/jthanat/realtime-obstacle-avoidance"
+                "/Users/jthanat/realtime-obstacle-avoidance",
+                "${workspaceFolder}/src"
             ],
             "name": "Linux",
             "intelliSenseMode": "clang-x64",
