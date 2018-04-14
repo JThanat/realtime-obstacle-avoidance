@@ -55,6 +55,7 @@ int main(void)
     int VROIX, VROIY, VROIW, VROIH;
     double sf;
     int alg;
+    int obj_count;
     int64 t;
 
     int SADWindowSize, numberOfDisparities;
@@ -180,7 +181,7 @@ int main(void)
     cout << min << " " << max << " " << numberOfDisparities << endl;
     
     // u-map and line connection
-    ellipse_list = calculate_udisparity(disp8, max, image_size);
+    ellipse_list = calculate_udisparity(disp8, max, image_size, obj_count);
 
     // draw elipse
 

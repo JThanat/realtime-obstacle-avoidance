@@ -41,7 +41,7 @@ namespace umap_utility
         }
     }
 
-    vector<ellipse_desc> calculate_udisparity(Mat disp_img, int max_disp, Size image_size)
+    vector<ellipse_desc> calculate_udisparity(Mat disp_img, int max_disp, Size image_size, int& ojb_count)
     {
         int64 t;
         uint8_t *p;
@@ -179,26 +179,28 @@ namespace umap_utility
                         ellipse_desc_objects[object_count - 1].u2 = maxc;
                         ellipse_desc_objects[object_count - 1].d1 = maxd;
                         ellipse_desc_objects[object_count - 1].d2 = sumd/component_count;
-                        cout << "ellipse_desc:" << object_count - 1 << " " << ellipse_desc_objects[object_count - 1].u1 << " " << ellipse_desc_objects[object_count - 1].u2 << " " << ellipse_desc_objects[object_count - 1].d1 << " " << ellipse_desc_objects[object_count - 1].d2 << endl;
+                        // cout << "ellipse_desc:" << object_count - 1 << " " << ellipse_desc_objects[object_count - 1].u1 << " " << ellipse_desc_objects[object_count - 1].u2 << " " << ellipse_desc_objects[object_count - 1].d1 << " " << ellipse_desc_objects[object_count - 1].d2 << " " << (mind+maxd)/2 << endl;
                     }
+                    // line(group_rect, Point(minc, sumd/component_count), Point(maxc,sumd/component_count), Scalar(0,255,0));
                     rectangle(group_rect, Point(minc, maxd), Point(maxc, mind), Scalar(255,0,0));
                     mark += diff_inc;
                 }
             }
         }
-        for (i = 0 ; i < 4 ; i++)
-            line(group_rect, Point(0, i*max_disp/4), Point(group_rect.cols, i*max_disp/4), Scalar(0,0,255));
-        cvtColor(uline_mask,uline_mask, CV_GRAY2BGR);
-        for (i = 0 ; i < group_rect.rows ; i=i+10)
-            line(uline_mask, Point(0, i), Point(group_rect.cols, i), Scalar(0,255,0));
+        // for (i = 0 ; i < 4 ; i++)
+        //     line(group_rect, Point(0, i*max_disp/4), Point(group_rect.cols, i*max_disp/4), Scalar(0,0,255));
+        // cvtColor(uline_mask,uline_mask, CV_GRAY2BGR);
+        // for (i = 0 ; i < group_rect.rows ; i=i+10)
+        //     line(uline_mask, Point(0, i), Point(group_rect.cols, i), Scalar(0,255,0));
 
         cout << "Number of object " << object_count << endl;
+        ojb_count = object_count;
 
         t = getTickCount() - t;
         cout << "Connect the Line Time elapsed: " << t * 1000 / getTickFrequency() << "ms" << endl;
-        imshow("uhist", uhist_vis);
-        imshow("group_rect", group_rect);
-        imshow("uline", uline_mask);
+        imwrite("./uhist.jpg", uhist_vis);
+        imwrite("./group_rect.jpg", group_rect);
+        imwrite("./uline.jpg", uline_mask);
 
         // return u1, u2, d1, d2 of each object
         
