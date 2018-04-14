@@ -58,6 +58,10 @@ int main(void)
     int obj_count;
     int64 t;
 
+    double *pe1, *pe2, *se1, *se2;
+    double f,b, GYb;
+    int current_x, current_y;
+
     int SADWindowSize, numberOfDisparities;
     Size image_size;
 
@@ -188,20 +192,64 @@ int main(void)
     // project back
 
     // drawing canvas
-    Mat canvas;
-    w = cropped_left.size().width;
-    h = cropped_left.size().height;
-    canvas.create(h, w * 2, CV_8UC1);
-    cropped_left.copyTo(canvas.rowRange(0, h).colRange(0, w));
-    cropped_right.copyTo(canvas.rowRange(0, h).colRange(w, w * 2));
-    cvtColor(canvas, canvas, CV_GRAY2BGR);
-    for (j = 0; j < canvas.rows; j += 16)
-        line(canvas, Point(0, j), Point(canvas.cols, j), Scalar(0, 255, 0), 1, 8);
+    // Mat canvas;
+    // w = cropped_left.size().width;
+    // h = cropped_left.size().height;
+    // canvas.create(h, w * 2, CV_8UC1);
+    // cropped_left.copyTo(canvas.rowRange(0, h).colRange(0, w));
+    // cropped_right.copyTo(canvas.rowRange(0, h).colRange(w, w * 2));
+    // cvtColor(canvas, canvas, CV_GRAY2BGR);
+    // for (j = 0; j < canvas.rows; j += 16)
+    //     line(canvas, Point(0, j), Point(canvas.cols, j), Scalar(0, 255, 0), 1, 8);
 
-    imshow("canvas", canvas);
-    imshow("disp", disp8);
-    // imshow("uhist", uhist_vis);
-    waitKey(0);
+    // imshow("canvas", canvas);
+    // imshow("disp", disp8);
+    // // imshow("uhist", uhist_vis);
+    // waitKey(0);
+
+    f = 30.23622; // in pixel 1 millimeter = 3.779528 pixel
+    b = 15;   // in cm
+      
+    // TODO: update current position
+    current_x = 3000; // need update
+    current_y = 0; // need update
+    Mat obstacle_map(1000, 5000, CV_8UC3);
+
+    GYb = 0; // 0 degree for now
+    Mat GRb = (Mat_<double>(2, 2) << cos(GYb * M_PI / 180), -sin(GYb * M_PI / 180), sin(GYb * M_PI / 180), cos(GYb * M_PI / 180));
+    Mat GPb = (Mat_<double>(2, 1) << current_x, current_y);
+    /*
+    End of ellipse obstacle map declaration
+    */
+    
+    for (i = 0; i < obj_count; ++i)
+    {
+        cout << "ellipse "<< i << endl; 
+        cout << "before scaling: " << ellipse_list[i].u1 << " " << ellipse_list[i].u2 << " " << ellipse_list[i].d1 << " " << ellipse_list[i].d2 << endl;
+        ellipse_list[i].u1 = ellipse_list[i].u1 - image_size.width/2; // set position of the drone at the center of the image
+        ellipse_list[i].u2 = ellipse_list[i].u2 - image_size.width/2;
+        ellipse_list[i].d1 = ellipse_list[i].d1/16;
+        ellipse_list[i].d2 = ellipse_list[i].d2/16;
+
+        // cout << "after scaling: " << ellipse_list[i].u1 << " " << ellipse_list[i].u2 << " " << ellipse_list[i].d1 << " " << ellipse_list[i].d2 << endl;
+
+        ellipse_list[i].BPe = (Mat_<double>(2, 1) << b*(ellipse_list[i].u1 + ellipse_list[i].u2)/(2*ellipse_list[i].d2), f*b/(ellipse_list[i].d2));
+        ellipse_list[i].BSe = (Mat_<double>(2, 1) << b*(ellipse_list[i].u2 - ellipse_list[i].u1)/(2*ellipse_list[i].d2), f*b/(ellipse_list[i].d2) - f*b/(ellipse_list[i].d1));
+        ellipse_list[i].GYe = GYb;
+        ellipse_list[i].ESe = (Mat_<double>(2, 1) << b*(ellipse_list[i].u2 - ellipse_list[i].u1)/(2*ellipse_list[i].d2), f*b/(ellipse_list[i].d2) - f*b/(ellipse_list[i].d1));
+        ellipse_list[i].GPe = GRb * ellipse_list[i].BPe + GPb;
+        ellipse_list[i].GSe = GRb * ellipse_list[i].BSe + GPb;
+
+        pe1 = ellipse_list[i].GPe.ptr<double>(0);
+        pe2 = ellipse_list[i].GPe.ptr<double>(1);
+
+        se1 = ellipse_list[i].BSe.ptr<double>(0);
+        se2 = ellipse_list[i].BSe.ptr<double>(1);
+        ellipse(obstacle_map, Point(cvRound(pe1[0]),cvRound(2000 - pe2[0])), Size(cvRound(2*se1[0]),cvRound(2*se2[0])), 0, 0, 360, Scalar(0,255,0),2);
+        cout << "drawn: " << pe1[0] << " " << pe2[0] << " " << 2*se1[0] << " " << 2*se2[0] << endl;
+    }
+    line(obstacle_map, Point(3000,0), Point(3000,2000), Scalar(0,0,255));
+    imwrite("./obstacle_map.jpg", obstacle_map);
 
     return 0;
 }
