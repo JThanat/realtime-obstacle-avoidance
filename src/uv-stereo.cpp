@@ -259,19 +259,23 @@ int main(void)
     /*
     Generate Waypoint 
     */
-    for (i = 0 ; i <= 20 ; i++)
+    for (j = 1 ; j <= 11 ; j++)
     {
-        waypoints.push_back(make_pair(3000,20*i));
-    }
-    t = getTickCount();
-    waypoints_pub = waypoint_checking(waypoints, ellipse_list, obj_count);
-    t = getTickCount() - t;
-    printf("generate waypoint time: %fms\n", t * 1000 / getTickFrequency());    
+        waypoints.clear();
+        for (i = 0 ; i < 200 ; i++)
+        {
+            waypoints.push_back(make_pair(500*j,10*i));
+        }
+        t = getTickCount();
+        waypoints_pub = waypoint_checking(waypoints, ellipse_list, obj_count);
+        t = getTickCount() - t;
+        printf("generate waypoint time: %fms\n", t * 1000 / getTickFrequency());    
 
-    for ( i = 0 ; i < waypoints_pub.size() -1 ; i++)
-    {
-        cout << waypoints_pub[i].first << " " << waypoints_pub[i].second << endl;
-        line(obstacle_map, Point(cvRound(waypoints_pub[i].first), cvRound(2000 - waypoints_pub[i].second)), Point(cvRound(waypoints_pub[i+1].first), cvRound(2000 - waypoints_pub[i+1].second)), Scalar(0,0,255), 2);
+        for ( i = 0 ; i < waypoints_pub.size() - 1 ; i++)
+        {
+            // cout << waypoints_pub[i].first << " " << waypoints_pub[i].second << endl;
+            line(obstacle_map, Point(cvRound(waypoints_pub[i].first), cvRound(2000 - waypoints_pub[i].second)), Point(cvRound(waypoints_pub[i+1].first), cvRound(2000 - waypoints_pub[i+1].second)), Scalar(0,0,255), 2);
+        }
     }
     imwrite("./obstacle_map.jpg", obstacle_map);
 
