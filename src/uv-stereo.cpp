@@ -31,10 +31,12 @@ v                     v
 #include <utility>
 
 #include "umap_util.hpp"
+#include "wp_planning.hpp"
 
 using namespace cv;
 using namespace std;
 using namespace umap_utility;
+using namespace wp;
 
 int main(void)
 {
@@ -65,7 +67,8 @@ int main(void)
     int SADWindowSize, numberOfDisparities;
     Size image_size;
 
-    Mat disp, disp8;
+    Mat disp(600,800, CV_8UC3);
+    Mat disp8(600,800, CV_8UC3);
     Mat R, T, R1, R2, P1, P2, Q;
     Mat camera_matrix[2], dist_coeffs[2];
     Mat rimg[2], cimg;
@@ -76,7 +79,8 @@ int main(void)
     vector<Point3f> objectPoints;
 
     vector<ellipse_desc> ellipse_list;
-    vector< pair<double, double> > waypoints(20);
+    vector< pair<double, double> > waypoints;
+    vector< pair<double, double> > waypoints_pub(20);
 
     Mat uhist_vis;
 
@@ -91,6 +95,7 @@ int main(void)
 
     left_img = imread(img_left_path, CV_LOAD_IMAGE_GRAYSCALE);
     right_img = imread(img_right_path, CV_LOAD_IMAGE_GRAYSCALE);
+    // disp = Mat::zeros(left_img.size(), CV_8UC3);
 
     image_size = left_img.size();
     // Setup Extrinsics Camera Matrix
@@ -150,8 +155,8 @@ int main(void)
     printf("Rectification Time elapsed: %fms\n", t * 1000 / getTickFrequency());
 
     // find disparity
-    // SADWindowSize = 11;
-    // numberOfDisparities = 16;
+    SADWindowSize = 3;
+    numberOfDisparities = 0;
 
     sgbm->setPreFilterCap(63);
     int sgbmWinSize = SADWindowSize > 0 ? SADWindowSize : 3;
@@ -180,6 +185,7 @@ int main(void)
         disp.convertTo(disp8, CV_8U, 255 / (numberOfDisparities * 16.));
     else
         disp.convertTo(disp8, CV_8U);
+
 
     double min, max;
     minMaxLoc(disp8, &min, &max, NULL, NULL);
@@ -219,10 +225,10 @@ int main(void)
     GYb = 0; // 0 degree for now
     Mat GRb = (Mat_<double>(2, 2) << cos(GYb * M_PI / 180), -sin(GYb * M_PI / 180), sin(GYb * M_PI / 180), cos(GYb * M_PI / 180));
     Mat GPb = (Mat_<double>(2, 1) << current_x, current_y);
-
+    
     for (i = 0; i < obj_count; ++i)
     {
-        cout << "ellipse "<< i << endl; 
+        // cout << "ellipse "<< i << endl; 
         ellipse_list[i].u1 = ellipse_list[i].u1 - image_size.width/2; // set position of the drone at the center of the image
         ellipse_list[i].u2 = ellipse_list[i].u2 - image_size.width/2;
         ellipse_list[i].d1 = ellipse_list[i].d1/16;
@@ -238,25 +244,36 @@ int main(void)
         ellipse_list[i].GSe = GRb * ellipse_list[i].BSe + GPb;
 
         // drawing ellipse
-        // pe1 = ellipse_list[i].GPe.ptr<double>(0);
-        // pe2 = ellipse_list[i].GPe.ptr<double>(1);
+        pe1 = ellipse_list[i].GPe.ptr<double>(0);
+        pe2 = ellipse_list[i].GPe.ptr<double>(1);
 
-        // se1 = ellipse_list[i].BSe.ptr<double>(0);
-        // se2 = ellipse_list[i].BSe.ptr<double>(1);
-        // ellipse(obstacle_map, Point(cvRound(pe1[0]),cvRound(2000 - pe2[0])), Size(cvRound(2*se1[0]),cvRound(2*se2[0])), 0, 0, 360, Scalar(0,255,0),2);
-        // cout << "drawn: " << pe1[0] << " " << pe2[0] << " " << 2*se1[0] << " " << 2*se2[0] << endl;
+        se1 = ellipse_list[i].BSe.ptr<double>(0);
+        se2 = ellipse_list[i].BSe.ptr<double>(1);
+        se1[0] = se1[0] + 50; // 50 cm boundary
+        se2[0] = se2[0] + 50; // 50 cm boundary
+        ellipse(obstacle_map, Point(cvRound(pe1[0]),cvRound(2000 - pe2[0])), Size(cvRound(se1[0] - 50),cvRound(se2[0] - 50)), 0, 0, 360, Scalar(0,0,255),2);
+        ellipse(obstacle_map, Point(cvRound(pe1[0]),cvRound(2000 - pe2[0])), Size(cvRound(se1[0]),cvRound(se2[0])), 0, 0, 360, Scalar(0,255,0),2);
+        cout << "drawn: " << pe1[0] << " " << pe2[0] << " " << 2*se1[0] << " " << 2*se2[0] << endl;
     }
     // line(obstacle_map, Point(3000,0), Point(3000,2000), Scalar(0,0,255));
-    // imwrite("./obstacle_map.jpg", obstacle_map);
-
     /*
     Generate Waypoint 
     */
-   for (i = 0 ; i <= 10 ; i++)
-   {
-       waypoints[i] = make_pair(0,i);
-   }
+    for (i = 0 ; i <= 20 ; i++)
+    {
+        waypoints.push_back(make_pair(3000,20*i));
+    }
+    t = getTickCount();
+    waypoints_pub = waypoint_checking(waypoints, ellipse_list, obj_count);
+    t = getTickCount() - t;
+    printf("generate waypoint time: %fms\n", t * 1000 / getTickFrequency());    
 
+    for ( i = 0 ; i < waypoints_pub.size() -1 ; i++)
+    {
+        cout << waypoints_pub[i].first << " " << waypoints_pub[i].second << endl;
+        line(obstacle_map, Point(cvRound(waypoints_pub[i].first), cvRound(2000 - waypoints_pub[i].second)), Point(cvRound(waypoints_pub[i+1].first), cvRound(2000 - waypoints_pub[i+1].second)), Scalar(0,0,255), 2);
+    }
+    imwrite("./obstacle_map.jpg", obstacle_map);
 
     return 0;
 }

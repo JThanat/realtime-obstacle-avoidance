@@ -29,7 +29,7 @@ add_executable(opencv_example src/example.cpp)
 # Link your application with OpenCV libraries
 target_link_libraries(opencv_example ${OpenCV_LIBS})
 
-add_executable(uv-stereo src/uv-stereo.cpp src/umap_util.cpp)
+add_executable(uv-stereo src/uv-stereo.cpp src/umap_util.cpp src/wp_planning.cpp)
 target_link_libraries(uv-stereo ${OpenCV_LIBS})
 
 add_executable(stereo-calib src/stereo-calib.cpp)
