@@ -32,5 +32,8 @@ target_link_libraries(opencv_example ${OpenCV_LIBS})
 add_executable(uv-stereo src/uv-stereo.cpp src/umap_util.cpp src/wp_planning.cpp)
 target_link_libraries(uv-stereo ${OpenCV_LIBS})
 
+add_executable(uv-stereo-raw src/uv-stereo-raw.cpp src/umap_util.cpp src/wp_planning.cpp)
+target_link_libraries(uv-stereo-raw ${OpenCV_LIBS})
+
 add_executable(stereo-calib src/stereo-calib.cpp)
 target_link_libraries(stereo-calib ${OpenCV_LIBS})
